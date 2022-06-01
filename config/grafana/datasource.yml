@@ -8,5 +8,5 @@ datasources:
     url: http://influxdb:8086
     basicAuth: false
     user: telegraf
-    password: DEFINE_A_SUPER_STRONG_PASSWORD_FOR_TELEGRAF_HERE
+    password: INFLUXDB_DATABASE_PASSWORD
 
