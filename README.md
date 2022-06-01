@@ -1,66 +1,124 @@
-# Docker Monitoring with Telegraf/InfluxDb/Grafana
+# Monitoring for Docker Hosts with Telegraf, InfluxDb and Grafana
 
-## Prerequisite
+This stack uses [Telegraf](https://www.influxdata.com/time-series-platform/telegraf/), [InfluxDb](https://www.influxdata.com/products/influxdb-overview/), [Grafana](https://grafana.com/) and [Traefik](https://traefik.io/traefik/).
 
-- Access to a host with docker and privileged rights
-- Have installed Traefik
+## Prerequisites
 
-## Setup
+Before using this project, please ensure you have the following prerequisites :
 
-1. Define a password for Telegraf
+- A host with `docker` installed, and a priviledged access to this host,
+- `docker-compose`
+- A `docker-compose` stack running [Traefik](https://traefik.io/traefik/)
+  - any usage of versions below `v2.6` may need some adjustements of the `docker-compose.yml`
+- An available DNS entry pointing to your host, for exposing Grafana
 
-- edit `docker-compose.yaml` at line 18 and replace `DEFINE_A_SUPER_STRONG_PASSWORD_FOR_TELEGRAF_HERE` with a randomly generated password
-- edit `config/telegraf/telegraf.conf` at line 168 and replace `DEFINE_A_SUPER_STRONG_PASSWORD_FOR_TELEGRAF_HERE` with the same password you set in `docker-compose.yaml`
-- edit `config/grafana/datasource.yml` at line 11 and replace `DEFINE_A_SUPER_STRONG_PASSWORD_FOR_TELEGRAF_HERE` with the same password you set in `docker-compose.yaml`
+## Installation
 
-2. Define a hostname for accessing Grafana through Traefik
+### Define an InfluxDb password
 
-- edit `config/grafana/grafana.ini` at line 10 and replace `DEFINE_A_HOST` with a DNS entry pointing to your host
+1. Generate a strong password for your InfluxDb instance,
+2. Replace all `INFLUXDB_DATABASE_PASSWORD` strings present in this repository by the generated strong password.  
+   You may find replacements to do in :
+   - `docker-compose.yml` @ line 18
+   - `config/telegraf/telegraf.conf` @ line 168
+   - `config/grafana/datasource.yml` @ line 11
 
-3. Define a password for accessing Grafana
+### Setup the hostname for accessing Grafana through Traefik
 
-- edit `config/grafana/grafana.ini` at line 248 and replace `SET_A_PASSWORD` with a strong password for accessing Grafana dashboards. The user will be `monitoring-admin`.
+1. Replace all `GRAFANA_HOST` strings present in this repository by your DNS entry pointing to your host.  
+   You may find replacements to do in :
+   - `config/grafana/grafana.ini` @ line 10
+   - `docker-compose.yml` @ lines 66, 70
 
-4. Create the Docker Network
+### Setup a password for accessing Grafana securely
 
-If you don't have any pre-existing docker network :
- - Run `docker network create dockernet`
+1. Generate another strong password for your Grafana instance,
+2. Replace all `GRAFANA_PASSWORD` strings present in this repository by the generated strong password.  
+   You may find replacements to do in :
+   - `config/grafana/grafana.ini` @ line 248
 
-Otherwise:
- - Change `docker-compose.yaml` and replace `dockernet` with the name of your docker network
+### Setup the correct Docker Network
 
-5. Configure your Traefik instance for sending metrics to Telegraf :
+In our project, we are using a docker network named `dockernet`. We have created it with the following command :
 
-- add the following lines to your `traefik.toml` configuration file :
-
+```shell
+docker network create dockernet
 ```
+
+Be sure your Traefik instance is connected to that network.
+
+If you want to use another docker network :
+1. Replace all `dockernet` strings present in this repository by your docker network name.  
+   You may find replacements to do in :
+   - `docker-compose.yml` @ lines 9, 30, 53, 77
+
+### Setup Metrics Exporting in your Traefik instance
+
+Add the following lines to your `traefik.yml` :
+
+```yaml
 metrics:
   influxDB:
     protocol: "http"
-    address: "http://telegraf:DEFINE_A_SUPER_STRONG_PASSWORD_FOR_TELEGRAF_HERE@influxdb:8086"
+    address: "http://telegraf:INFLUXDB_DATABASE_PASSWORD@influxdb:8086"
     database: "telegraf"
     addEntryPointsLabels: true
     addServicesLabels: true
 ```
 
-Replace `DEFINE_A_SUPER_STRONG_PASSWORD_FOR_TELEGRAF_HERE` with the same password set in `docker-compose.yaml`
+Don't forget to replace `INFLUXDB_DATABASE_PASSWORD` with the same password set in `docker-compose.yaml`
 
-- restart the service
+Then you will need to restart the service.
 
-## Starting
+## Running the monitoring stack
 
-At the first start of this stack, uncomment `docker-compose.yaml` at lines 14 to 19 so the InfluxDb databases properly sets up.
+### At first run
 
-`docker-compose up`
+At the first start of this stack, uncomment `docker-compose.yml` at lines 14 to 19 so the InfluxDb database properly sets up.
 
-Check the logs and see that InfluxDb is correctly setup, the stop the stack :
+```shell
+docker-compose up
+```
 
-`docker-compose down`
+Check the logs and see that InfluxDb is correctly setup, then stop the stack :
 
-And comment `docker-compose.yaml` at lines 14 to 19. Now you can start the stack again.
+```shell
+docker-compose down
+```
 
-`docker-compose up -d`
+You can now comment the `docker-compose.yaml` file at lines 14 to 19. 
 
-## Inspiration
+### Running the stack
+
+```shell
+docker-compose up -d
+```
+
+## FAQ
+
+### How to add a provisionned Grafana dashboard ?
+
+Just add the dashboard JSON file into the `config/grafana/dashboards` then restart the monitoring stack.
+
+### How can I find compatible Grafana dashboards ?
+
+Go to the [Grafana Website](https://grafana.com/grafana/dashboards/) and search dashboards with `InfluxDb` Data Source.
+
+## Troubleshooting
+
+### If no docker metrics are detected
+
+Check the Telegraf logs, maybe it cannot access to the docker.sock file. Adjust access rights accordingly on the docker host.
+
+```yaml
+docker-compose logs -f
+```
+
+## Inspirations
+
+This monitoring stack was inspired by many projects available on Internet :
 
  - https://ubuntu.self-hosted.fr/installation-grafana-docker-traefik/3/
+
+---
+EOF

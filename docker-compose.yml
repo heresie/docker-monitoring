@@ -15,7 +15,7 @@ services:
 #      DOCKER_INFLUXDB_INIT_ORG: "telegraf"
 #      DOCKER_INFLUXDB_INIT_BUCKET: "telegraf"
 #      DOCKER_INFLUXDB_INIT_USERNAME: "telegraf"
-#      DOCKER_INFLUXDB_INIT_PASSWORD: "DEFINE_A_SUPER_STRONG_PASSWORD_FOR_TELEGRAF_HERE"
+#      DOCKER_INFLUXDB_INIT_PASSWORD: "INFLUXDB_DATABASE_PASSWORD"
 #      DOCKER_INFLUXDB_INIT_RETENTION: "8w"
     volumes:
       - ./data/influxdb:/var/lib/influxdb
@@ -63,11 +63,11 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.grafana.entrypoints=http"
-      - "traefik.http.routers.grafana.rule=Host(`DEFINE_A_HOST`)"
+      - "traefik.http.routers.grafana.rule=Host(`GRAFANA_HOST`)"
       - "traefik.http.middlewares.grafana-https-redirect.redirectscheme.scheme=https"
       - "traefik.http.routers.grafana.middlewares=grafana-https-redirect"
       - "traefik.http.routers.grafana-https.entrypoints=https"
-      - "traefik.http.routers.grafana-https.rule=Host(`DEFINE_A_HOST`)"
+      - "traefik.http.routers.grafana-https.rule=Host(`GRAFANA_HOST`)"
       - "traefik.http.routers.grafana-https.tls=true"
       - "traefik.http.routers.grafana-https.tls.certresolver=http"
       - "traefik.http.routers.grafana-https.service=grafana-http-svc"
