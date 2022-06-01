@@ -1,4 +1,4 @@
-# Monitoring for Docker Hosts with Telegraf, InfluxDb and Grafana
+# Monitoring for Docker Hosts
 
 This stack uses [Telegraf](https://www.influxdata.com/time-series-platform/telegraf/), [InfluxDb](https://www.influxdata.com/products/influxdb-overview/), [Grafana](https://grafana.com/) and [Traefik](https://traefik.io/traefik/).
 
