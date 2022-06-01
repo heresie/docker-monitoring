@@ -1,0 +1,12 @@
+apiVersion: 1
+
+datasources:
+  - name: telegraf
+    type: influxdb
+    access: proxy
+    database: telegraf
+    url: http://influxdb:8086
+    basicAuth: false
+    user: telegraf
+    password: DEFINE_A_SUPER_STRONG_PASSWORD_FOR_TELEGRAF_HERE
+

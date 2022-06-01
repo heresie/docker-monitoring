@@ -1,0 +1,82 @@
+version: "3"
+services:
+  influxdb:
+    image: influxdb:1.8
+    container_name: influxdb
+    restart: unless-stopped
+    hostname: influxdb
+    networks:
+      - dockernet
+    environment:
+      # UDP Needed for monitoring Traefik
+      INFLUXDB_UDP_ENABLED: true
+# Uncomment the following lines on the first run of this docker-compose stack 
+#      DOCKER_INFLUXDB_INIT_MODE: "setup"
+#      DOCKER_INFLUXDB_INIT_ORG: "telegraf"
+#      DOCKER_INFLUXDB_INIT_BUCKET: "telegraf"
+#      DOCKER_INFLUXDB_INIT_USERNAME: "telegraf"
+#      DOCKER_INFLUXDB_INIT_PASSWORD: "DEFINE_A_SUPER_STRONG_PASSWORD_FOR_TELEGRAF_HERE"
+#      DOCKER_INFLUXDB_INIT_RETENTION: "8w"
+    volumes:
+      - ./data/influxdb:/var/lib/influxdb
+
+  telegraf:
+    image: telegraf:1.22
+    depends_on:
+      - influxdb
+    container_name: telegraf
+    restart: unless-stopped
+    networks:
+      - dockernet
+    tty: true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /:/hostfs:ro
+      - ./config/telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+      - ./config/telegraf/bin:/custom_scripts
+    privileged: true
+    environment:
+      HOST_ETC: "/hostfs/etc"
+      HOST_PROC: "/hostfs/proc"
+      HOST_SYS: "/hostfs/sys"
+      HOST_VAR: "/hostfs/var"
+      HOST_RUN: "/hostfs/run"
+      HOST_MOUNT_PREFIX: "/hostfs"
+
+  grafana:
+    image: grafana/grafana:8.5.2
+    depends_on:
+      - influxdb
+    container_name: grafana
+    restart: unless-stopped
+    networks:
+      - dockernet
+    environment:
+      GF_INSTALL_PLUGINS: "grafana-clock-panel,grafana-influxdb-08-datasource,grafana-kairosdb-datasource,grafana-piechart-panel,grafana-simple-json-datasource,grafana-worldmap-panel"
+      GF_PATHS_CONFIG: "/etc/grafana/grafana.ini"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./config/grafana/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml
+      - ./config/grafana/dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml
+      - ./config/grafana/grafana.ini:/etc/grafana/grafana.ini
+      - ./config/grafana/dashboards:/var/lib/grafana/dashboards
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.grafana.entrypoints=http"
+      - "traefik.http.routers.grafana.rule=Host(`DEFINE_A_HOST`)"
+      - "traefik.http.middlewares.grafana-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.grafana.middlewares=grafana-https-redirect"
+      - "traefik.http.routers.grafana-https.entrypoints=https"
+      - "traefik.http.routers.grafana-https.rule=Host(`DEFINE_A_HOST`)"
+      - "traefik.http.routers.grafana-https.tls=true"
+      - "traefik.http.routers.grafana-https.tls.certresolver=http"
+      - "traefik.http.routers.grafana-https.service=grafana-http-svc"
+      - "traefik.http.services.grafana-http-svc.loadbalancer.server.port=3000"
+
+networks:
+  dockernet:
+    external: true
+
+volumes:
+  grafana-data: {}
+
