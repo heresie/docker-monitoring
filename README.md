@@ -1,5 +1,7 @@
 # Monitoring for Docker Hosts
 
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0) [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://GitHub.com/Naereen/StrapDown.js/graphs/commit-activity) 
+
 This stack uses [Telegraf](https://www.influxdata.com/time-series-platform/telegraf/), [InfluxDb](https://www.influxdata.com/products/influxdb-overview/), [Grafana](https://grafana.com/) and [Traefik](https://traefik.io/traefik/).
 
 ## Prerequisites
@@ -120,6 +122,10 @@ docker-compose logs -f
 This monitoring stack was inspired by many projects available on Internet :
 
  - https://ubuntu.self-hosted.fr/installation-grafana-docker-traefik/3/
+
+## Licensing
+
+This repository is licensed under the Apache License, Version 2.0. See LICENSE for the full license text.
 
 ---
 EOF
