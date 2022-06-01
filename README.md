@@ -39,7 +39,8 @@ Before using this project, please ensure you have the following prerequisites :
 
 ### Setup the correct Docker Network
 
-In our project, we are using a docker network named `dockernet`. We have created it with the following command :
+In our project, we are using a docker network named `dockernet`.  
+We have created it with the following command :
 
 ```shell
 docker network create dockernet
