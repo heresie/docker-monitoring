@@ -1,0 +1,111 @@
+services:
+
+  promtail:
+    image: grafana/promtail:3.2.0
+    container_name: promtail
+    restart: unless-stopped
+    user: "root:${DOCKER_GID}"
+    command:
+      - -config.file=/etc/promtail/docker-config.yaml
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./config/promtail/promtail.yaml:/etc/promtail/docker-config.yaml
+    depends_on:
+      - loki
+    networks:
+      - metrics
+
+  loki:
+    image: grafana/loki:3.2.0
+    container_name: loki
+    restart: unless-stopped
+    command:
+      - -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+      - loki-data:/loki
+    networks:
+      - metrics
+
+  influxdb:
+    image: influxdb:2
+    container_name: influxdb
+    restart: unless-stopped
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+      - influx-data:/var/lib/influxdb2
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: "setup"
+      DOCKER_INFLUXDB_INIT_ORG: "${INFLUXDB_ORGANIZATION}"
+      DOCKER_INFLUXDB_INIT_BUCKET: "${INFLUXDB_BUCKET}"
+      DOCKER_INFLUXDB_INIT_USERNAME: "${INFLUXDB_USERNAME}"
+      DOCKER_INFLUXDB_INIT_PASSWORD: "${INFLUXDB_PASSWORD}"
+      DOCKER_INFLUXDB_INIT_RETENTION: "${INFLUXDB_RETENTION}"
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: "${INFLUXDB_ADMIN_TOKEN}"
+    networks:
+      - metrics
+
+  telegraf:
+    image: telegraf:1.30
+    container_name: telegraf
+    restart: unless-stopped
+    user: "telegraf:${DOCKER_GID}"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+      - /:/hostfs:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./config/telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+      - ./bin/telegraf:/scripts
+    environment:
+      HOST_ETC: "/hostfs/etc"
+      HOST_PROC: "/hostfs/proc"
+      HOST_SYS: "/hostfs/sys"
+      HOST_VAR: "/hostfs/var"
+      HOST_RUN: "/hostfs/run"
+      HOST_MOUNT_PREFIX: "/hostfs"    
+    depends_on:
+      - influxdb
+    networks:
+      - metrics
+
+  grafana:
+    image: grafana/grafana:10.4.2
+    container_name: grafana
+    restart: unless-stopped
+    depends_on:
+      - telegraf
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+      - grafana-data:/var/lib/grafana
+      - ./config/grafana/datasources.yml:/etc/grafana/provisioning/datasources/single.yml
+      - ./config/grafana/dashboards:/etc/grafana/provisioning/dashboards
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USERNAME}
+
+    networks:
+      - metrics
+      - dockernet
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.grafana.rule=Host(`${TRAEFIK_HOST}`)"
+      - "traefik.http.routers.grafana.service=grafana-svc"
+      - "traefik.http.services.grafana-svc.loadbalancer.server.port=3000"
+
+networks:
+  metrics:
+  dockernet:
+    external: true
+
+volumes:
+  grafana-data: {}
+  influx-data: {}
+  loki-data: {}
+

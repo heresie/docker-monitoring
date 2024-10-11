@@ -30,7 +30,7 @@ do
   DROP_IN=$(cat $HOSTFS/sys/class/net/$IFACE/statistics/tx_dropped)
   DROP_OUT=$(cat $HOSTFS/sys/class/net/$IFACE/statistics/rx_dropped)
 
-  if [ -z != ${BYTES_SENT} ] && 
+  if [ -z != ${BYTES_SENT} ] &&
      [ -z != ${BYTES_RECV} ] &&
      [ -z != ${PACKETS_SENT} ] &&
      [ -z != ${PACKETS_RECV} ] &&
